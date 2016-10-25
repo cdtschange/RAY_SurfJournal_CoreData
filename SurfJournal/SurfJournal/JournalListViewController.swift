@@ -52,8 +52,24 @@ class JournalListViewController: UITableViewController {
 
       let surfJournalEntry = fetchedResultsController.object(at: indexPath)
 
-      detailViewController.journalEntry = surfJournalEntry
-      detailViewController.context = surfJournalEntry.managedObjectContext
+//      detailViewController.journalEntry = surfJournalEntry
+//      detailViewController.context = surfJournalEntry.managedObjectContext
+//      detailViewController.delegate = self
+      
+      // 1
+      let childContext =
+        NSManagedObjectContext(
+          concurrencyType: .mainQueueConcurrencyType)
+      childContext.parent = coreDataStack.mainContext
+      
+      // 2
+      let childEntry =
+        childContext.object(with: surfJournalEntry.objectID)
+          as? JournalEntry
+      
+      // 3
+      detailViewController.journalEntry = childEntry
+      detailViewController.context = childContext
       detailViewController.delegate = self
 
     } else if segue.identifier == "SegueListToDetailAdd" {
@@ -63,11 +79,24 @@ class JournalListViewController: UITableViewController {
           fatalError("Application storyboard mis-configuration")
       }
 
-      let newJournalEntry = JournalEntry(context: coreDataStack.mainContext)
 
-      detailViewController.journalEntry = newJournalEntry
-      detailViewController.context = newJournalEntry.managedObjectContext
+//      detailViewController.journalEntry = newJournalEntry
+//      detailViewController.context = newJournalEntry.managedObjectContext
+//      detailViewController.delegate = self
+      
+      // 1
+      let childContext =
+        NSManagedObjectContext(
+          concurrencyType: .mainQueueConcurrencyType)
+      childContext.parent = coreDataStack.mainContext
+      
+      // 2
+      let childEntry = JournalEntry(context: childContext)
+      // 3
+      detailViewController.journalEntry = childEntry
+      detailViewController.context = childContext
       detailViewController.delegate = self
+      
     }
   }
 }
