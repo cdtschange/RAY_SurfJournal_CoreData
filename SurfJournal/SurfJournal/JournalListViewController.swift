@@ -90,48 +90,72 @@ private extension JournalListViewController {
   func exportCSVFile() {
     navigationItem.leftBarButtonItem = activityIndicatorBarButtonItem()
 
-    let context = coreDataStack.mainContext
-    var results: [JournalEntry] = []
-    do {
-      results = try context.fetch(self.surfJournalFetchRequest())
-    } catch let error as NSError {
-      print("ERROR: \(error.localizedDescription)")
-    }
+//    let context = coreDataStack.mainContext
+//    var results: [JournalEntry] = []
+//    do {
+//      results = try context.fetch(self.surfJournalFetchRequest())
+//    } catch let error as NSError {
+//      print("ERROR: \(error.localizedDescription)")
+//    }
 
-    let exportFilePath = NSTemporaryDirectory() + "export.csv"
-    let exportFileURL = URL(fileURLWithPath: exportFilePath)
-    FileManager.default.createFile(atPath: exportFilePath, contents: Data(), attributes: nil)
-
-    let fileHandle: FileHandle?
-    do {
-      fileHandle = try FileHandle(forWritingTo: exportFileURL)
-    } catch let error as NSError {
-      print("ERROR: \(error.localizedDescription)")
-      fileHandle = nil
-    }
-
-    if let fileHandle = fileHandle {
-
-      for journalEntry in results {
-        fileHandle.seekToEndOfFile()
-        guard let csvData = journalEntry
-          .csv()
-          .data(using: .utf8, allowLossyConversion: false) else {
-            continue
+    // 1
+    coreDataStack.storeContainer.performBackgroundTask {
+        (context) in
+        
+        var results: [JournalEntry] = []
+        do {
+            results = try context.fetch(self.surfJournalFetchRequest())
+        } catch let error as NSError {
+            print("ERROR: \(error.localizedDescription)")
         }
-
-        fileHandle.write(csvData)
+        
+        
+        let exportFilePath = NSTemporaryDirectory() + "export.csv"
+        let exportFileURL = URL(fileURLWithPath: exportFilePath)
+        FileManager.default.createFile(atPath: exportFilePath, contents: Data(), attributes: nil)
+        
+        let fileHandle: FileHandle?
+        do {
+            fileHandle = try FileHandle(forWritingTo: exportFileURL)
+        } catch let error as NSError {
+            print("ERROR: \(error.localizedDescription)")
+            fileHandle = nil
+        }
+        
+        if let fileHandle = fileHandle {
+            
+            for journalEntry in results {
+                fileHandle.seekToEndOfFile()
+                guard let csvData = journalEntry
+                    .csv()
+                    .data(using: .utf8, allowLossyConversion: false) else {
+                        continue
+                }
+                
+                fileHandle.write(csvData)
+            }
+            
+            fileHandle.closeFile()
+            
+            print("Export Path: \(exportFilePath)")
+//            self.navigationItem.leftBarButtonItem = self.exportBarButtonItem()
+//            self.showExportFinishedAlertView(exportFilePath)
+            // 6
+            DispatchQueue.main.async {
+                self.navigationItem.leftBarButtonItem =
+                    self.exportBarButtonItem()
+                self.showExportFinishedAlertView(exportFilePath)
+            }
+            
+        } else {
+//            self.navigationItem.leftBarButtonItem = self.exportBarButtonItem()
+            
+            DispatchQueue.main.async {
+                self.navigationItem.leftBarButtonItem =
+                    self.exportBarButtonItem()
+            }
+        }
       }
-
-      fileHandle.closeFile()
-
-      print("Export Path: \(exportFilePath)")
-      self.navigationItem.leftBarButtonItem = self.exportBarButtonItem()
-      self.showExportFinishedAlertView(exportFilePath)
-
-    } else {
-      self.navigationItem.leftBarButtonItem = self.exportBarButtonItem()
-    }
   }
 
   // MARK: Export
